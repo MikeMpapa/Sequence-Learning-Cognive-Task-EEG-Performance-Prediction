@@ -36,9 +36,7 @@ def ReadSessionFile(filename, session_score):
         value = line.split()[1:]    
         if key not in data.keys():
             data[key] = []
-        data[key].append(value)
-
-    
+        data[key].append(value)  
 
     for key in data.keys():
         tmp = filename.split('/')[-3:]
@@ -74,7 +72,6 @@ def LoadEEGDirs(root):
         for name in files:
             logcheck = False
             interaction_id = str(name.split('_')[-1])
-            print interaction_id,len(session_scores),path
     
             if fnmatch(name, pattern1) or fnmatch(name, pattern2):
                 if int(interaction_id)-1 < len(session_scores): #to avoid errors during the data recording
