@@ -32,7 +32,7 @@ def LoadTrainingData(path, datatype):
 
 
 def TrainEGGClassifier(data,labels):
-        DataClassification.TrainSVMClassification(data, labels, 80, 2, 'rbf', [1,5,10,15,30,50], True )
+        model, data_scaler = DataClassification.TrainSVMClassification(data, labels, 80, 2, 'rbf', [50, 75, 100, 125, 150, 175, 200],False,False,"",False)
 
 
 
