@@ -32,7 +32,8 @@ def LoadTrainingData(path, datatype):
 
 
 def TrainEGGClassifier(data,labels):
-        model, data_scaler = DataClassification.TrainSVMClassification(data, labels, 80, 2, 'rbf', [50, 75, 100, 125, 150, 175, 200],False,False,"",False)
+        #model, data_scaler = DataClassification.TrainSVMClassification(data, labels, 80, 3, kernel='rbf',c_values= [1,0.05],visible=True,save=True,train_all=False)
+        model, data_scaler = DataClassification.TrainSVMClassification(data, labels, 80, 1, save=True,visible=True,c_values=[0.1,0.50,0.2],train_all = False,save_path="/home/michalis/poutsaras_SVC4_all",kernel="rbf")
 
 
 
