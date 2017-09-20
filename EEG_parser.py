@@ -41,8 +41,8 @@ def ReadSessionFile(filename, session_score):
     for key in data.keys():
         tmp = filename.split('/')[-3:]
 
-        #userID_sessionID_robot/userTUrnID_sessionScore_dataType
-        data_file_name = ('_').join((tmp[-3].split('_')[-1], tmp[-2].split('_')[-1], tmp[-1].split('_')[0][0] + tmp[-1].split('_')[-1], str(session_score),key))
+        #userID_sessionID_robot/user_TurnID_sessionScore_dataType
+        data_file_name = ('_').join((tmp[-3].split('_')[-1], tmp[-2].split('_')[-1], tmp[-1].split('_')[0][0]+"_" + tmp[-1].split('_')[-1], str(session_score),key))
         SaveData2Binary(np.asarray(data[key]), 'EEG_DATA', data_file_name)
     
 
