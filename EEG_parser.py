@@ -22,6 +22,9 @@ EEG file parser
 '''
 def ReadSessionFile(filename):
     data = {}
+    data['h_eeg'] = []
+    data['h'] = [[1,1,1,1]]
+
 
     with open(filename,"r") as f:
         txt = f.readlines()
@@ -32,7 +35,11 @@ def ReadSessionFile(filename):
         value = line.split()[1:]    
         if key not in data.keys():
             data[key] = []
+        if key == 'eeg':
+            data['h'][-1]
+            data['h_eeg'].append(data['h'][-1])
         data[key].append(value)  
+    data['h'] = np.delete(data['h'],0,0)    
     return data    
 
 
@@ -99,7 +106,7 @@ def main(argv):
 
                     for key in data.keys():
                         data[key] = np.array(data[key])
-                    np.savez(save,h=data['h'],c=data['c'],raw=data['eeg'],
+                    np.savez(save,h=data['h'],h_eeg=data['h_eeg'],c=data['c'],raw=data['eeg'],
                              a=data['a'], b=data['b'], g=data['g'], d=data['d'], t=data['t'] ,
                              Aa=data['Aa'], Ab=data['Ab'], Ag=data['Ag'], Ad=data['Ad'], At=data['At'],
                              ascore=data['as'], bscore=data['bs'],gscore=data['gs'],dscore=data['ds'],tscore=data['ts'])
