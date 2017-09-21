@@ -3,7 +3,7 @@ import glob
 import cPickle
 import numpy as np
 from pyMultimedia import DataClassification
-
+from EEG_parser import SaveData2Binary
 '''
 
 Load a specific set of EEG data and their labels
