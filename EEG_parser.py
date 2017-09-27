@@ -48,15 +48,16 @@ def main(argv):
 
     folds = 10
     root = argv[0]
+    destination = argv[1]
     train_percent = 0.8
 
     user_list = getUsers(root)
 
     for i in range(folds):
-         train_success = ('/').join(('EEG_DATA','fold_'+str(i),'train','success'))
-         train_fail=('/').join(('EEG_DATA','fold_'+str(i),'train','fail'))
-         test_success = ('/').join(('EEG_DATA','fold_'+str(i),'test','success'))
-         test_fail=('/').join(('EEG_DATA','fold_'+str(i),'test','fail'))
+         train_success = ('/').join((destination,'fold_'+str(i),'train','success'))
+         train_fail=('/').join((destination,'fold_'+str(i),'train','fail'))
+         test_success = ('/').join((destination,'fold_'+str(i),'test','success'))
+         test_fail=('/').join((destination,'fold_'+str(i),'test','fail'))
 
          if not os.path.exists(train_success):
             os.makedirs(train_success)

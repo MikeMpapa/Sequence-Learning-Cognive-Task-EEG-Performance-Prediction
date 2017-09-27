@@ -61,9 +61,9 @@ def stSpectralRollOff(X, c):
         mC = 0.0
     return (mC)
 
-def fileFeatureExtraction(fileName):                                                                                                                         # feature extraction from file
+def fileFeatureExtraction(fileName, signal_type):                                                                                                                         # feature extraction from file
     b = numpy.load(fileName)
-    rawData = b["raw"].astype("float64")                                                                                                                     # TODO: read the rest of the signals here
+    rawData = b[signal_type].astype("float64")                                                                                                                     # TODO: read the rest of the signals here
     means = rawData.mean(axis = 0)                                                                                                                           # compute average
     stds = rawData.std(axis = 0)                                                                                                                             # compute std
     maxs = rawData.max(axis = 0)                                                                                                                             # compute max values
@@ -79,7 +79,7 @@ def fileFeatureExtraction(fileName):                                            
     featureVector = numpy.concatenate((means, stds, maxs, mins, centroid, rolloff))                                                                          # concatenate features to form the final feature vector
     return featureVector
 
-def dirFeatureExtraction(dirNames):                                                                                                                          # extract features from a list of directories
+def dirFeatureExtraction(dirNames,signal_type):                                                                                                                          # extract features from a list of directories
     features = []
     classNames = []
     for d in dirNames:                                                                                                                                       # for each direcotry
@@ -89,7 +89,7 @@ def dirFeatureExtraction(dirNames):                                             
             filesList.extend(glob.glob(os.path.join(d, files)))
         filesList = sorted(filesList)
         for i, file in enumerate(filesList):                                                                                                                 # for each npz file
-            fv = fileFeatureExtraction(file)                                                                                                                 # extract features and append to feature matrix:
+            fv = fileFeatureExtraction(file,signal_type)                                                                                                                 # extract features and append to feature matrix:
             if i==0:
                 allFeatures = fv
             else:
@@ -98,7 +98,7 @@ def dirFeatureExtraction(dirNames):                                             
         classNames.append(d.split(os.sep)[-1])
     return classNames, features
 
-def main(rootName,modelType,classifierParam):        
+def main(rootName,modelType,classifierParam,signal_type):        
     CMall = numpy.zeros((2,2))
     if modelType != "svm" and modelType != "svm_rbf":
         C = [int(classifierParam)]    
@@ -106,11 +106,11 @@ def main(rootName,modelType,classifierParam):
         C = [(classifierParam)]        
     F1s = []
     Accs = []
-    for ifold in range(0, 10):                                                                                                                              # for each fold
+    for ifold in range(0, 1):                                                                                                                              # for each fold
         dirName = rootName + os.sep + "fold_{0:d}".format(ifold)                                                                                            # get fold path name
-        classNamesTrain, featuresTrain = dirFeatureExtraction([os.path.join(dirName, "train", "fail"), os.path.join(dirName, "train", "success")])          # TRAINING data feature extraction  
+        classNamesTrain, featuresTrain = dirFeatureExtraction([os.path.join(dirName, "train", "fail"), os.path.join(dirName, "train", "success")],signal_type)          # TRAINING data feature extraction  
         bestParam = aT.evaluateClassifier(featuresTrain, classNamesTrain, 2, modelType, C, 0, 0.90)                                                         # internal cross-validation (for param selection)
-        classNamesTest, featuresTest = dirFeatureExtraction([os.path.join(dirName, "test", "fail"), os.path.join(dirName, "test", "success")])              # trainGradientBoosting data feature extraction  
+        classNamesTest, featuresTest = dirFeatureExtraction([os.path.join(dirName, "test", "fail"), os.path.join(dirName, "test", "success")],signal_type)              # trainGradientBoosting data feature extraction  
         [featuresTrainNew, MEAN, STD] = aT.normalizeFeatures(featuresTrain)                                                                                 # training features NORMALIZATION                        
         if modelType == "svm":                                                                                                                              # classifier training
             Classifier = aT.trainSVM(featuresTrainNew, bestParam)        
