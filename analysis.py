@@ -63,7 +63,7 @@ def stSpectralRollOff(X, c):
 
 def fileFeatureExtraction(fileName, signal_type):                                                                                                                         # feature extraction from file
     b = numpy.load(fileName)
-    rawData = b[signal_type].astype("float64")                                                                                                                     # TODO: read the rest of the signals here
+    rawData = b[signal_type].astype("float64") 
     means = rawData.mean(axis = 0)                                                                                                                           # compute average
     stds = rawData.std(axis = 0)                                                                                                                             # compute std
     maxs = rawData.max(axis = 0)                                                                                                                             # compute max values
@@ -82,6 +82,7 @@ def fileFeatureExtraction(fileName, signal_type):                               
 def dirFeatureExtraction(dirNames,signal_type):                                                                                                                          # extract features from a list of directories
     features = []
     classNames = []
+    c1 = 0
     for d in dirNames:                                                                                                                                       # for each direcotry
         types = ('*.npz',)
         filesList = []
@@ -89,13 +90,19 @@ def dirFeatureExtraction(dirNames,signal_type):                                 
             filesList.extend(glob.glob(os.path.join(d, files)))
         filesList = sorted(filesList)
         for i, file in enumerate(filesList):                                                                                                                 # for each npz file
-            fv = fileFeatureExtraction(file,signal_type)                                                                                                                 # extract features and append to feature matrix:
+            fv = fileFeatureExtraction(file,signal_type)   
+            if numpy.isnan(fv).any():
+                #print file.split('_')
+                #c1+=1
+                continue                                                                                                              # extract features and append to feature matrix:
             if i==0:
                 allFeatures = fv
             else:
                 allFeatures = numpy.vstack((allFeatures, fv))
         features.append(allFeatures)
         classNames.append(d.split(os.sep)[-1])
+    #print c1
+    #sys.exit()
     return classNames, features
 
 def main(rootName,modelType,classifierParam,signal_type):        
@@ -106,7 +113,7 @@ def main(rootName,modelType,classifierParam,signal_type):
         C = [(classifierParam)]        
     F1s = []
     Accs = []
-    for ifold in range(0, 1):                                                                                                                              # for each fold
+    for ifold in range(0, 10):                                                                                                                              # for each fold
         dirName = rootName + os.sep + "fold_{0:d}".format(ifold)                                                                                            # get fold path name
         classNamesTrain, featuresTrain = dirFeatureExtraction([os.path.join(dirName, "train", "fail"), os.path.join(dirName, "train", "success")],signal_type)          # TRAINING data feature extraction  
         bestParam = aT.evaluateClassifier(featuresTrain, classNamesTrain, 2, modelType, C, 0, 0.90)                                                         # internal cross-validation (for param selection)
@@ -159,7 +166,7 @@ def main(rootName,modelType,classifierParam,signal_type):
     print "SUCCESS Recall = {0:.1f}".format(100*Recall[classNamesTrain.index("success")])
     print "SUCCESS Precision = {0:.1f}".format(100*Precision[classNamesTrain.index("success")])
 
-    return Acc,Recall,Precision,F1
+    return CMall,Acc,Recall,Precision,F1
 
 
 if __name__ == '__main__':
