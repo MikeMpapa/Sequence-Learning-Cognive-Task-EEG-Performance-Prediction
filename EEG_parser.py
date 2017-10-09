@@ -7,6 +7,13 @@ import glob, os
 
 filename = '/home/michalis/Documents/sequence-learning/data/user_1/session_3/robot_1'
 
+def CleanData(data):
+    for sig in data.files:
+        if data['h'].shape[0] > data[sig]:
+
+    for i in data['h']:
+        if np.sum(i) >7
+        sys.exit()
 
 def getUsers(root):
     user_id = []
@@ -20,7 +27,7 @@ def getUsers(root):
 EEG file parser
 
 '''
-def ReadSessionFile(filename):
+def ReadRoundFile(filename):
     data = {}
     data['h_eeg'] = []
     data['h'] = [[1,1,1,1]]
@@ -30,16 +37,22 @@ def ReadSessionFile(filename):
         txt = f.readlines()
     f.close
     
+    h_found = False
     for line in txt:
         key = line.split()[0]
-        value = line.split()[1:]    
-        if key not in data.keys():
-            data[key] = []
-        if key == 'eeg':
-            data['h'][-1]
-            data['h_eeg'].append(data['h'][-1])
-        data[key].append(value)  
+        if key == 'h':
+            h_found = True
+        if h_found:
+            value = line.split()[1:]    
+            if key not in data.keys():
+                data[key] = []
+            if key == 'eeg':
+                data['h_eeg'].append(data['h'][-1])
+            data[key].append(value)  
     data['h'] = np.delete(data['h'],0,0)    
+
+    data = CleanData(data)
+
     return data    
 
 
@@ -72,10 +85,10 @@ def main(argv):
          train_users = user_list_randperm[:int(train_percent*len(user_list))]
          test_users = user_list_randperm[int(train_percent*len(user_list)):]
          
-         print
-         print i
-         print user_list_randperm
-         print  train_users,test_users
+         #print
+         #print i
+         #print user_list_randperm
+         #print  train_users,test_users
 
          #load eeg data for each user
          for user in user_list_randperm:      
@@ -91,7 +104,7 @@ def main(argv):
                     # get WIN-LOSE label
                     label = line.split(" ")[4] 
                     #open the EEG_robot file that corresponds to the ith round of the session
-                    data = ReadSessionFile(('/').join((root,"user_"+user,session,"robot_"+str(j+1))))
+                    data = ReadRoundFile(('/').join((root,"user_"+user,session,"robot_"+str(j+1))))
                     if user in train_users: # if  user belongs to training in this fold
                         if label == '1':
                             save = ('/').join((train_success,user+'_'+session.split('_')[-1]+'_'+str(j+1)))

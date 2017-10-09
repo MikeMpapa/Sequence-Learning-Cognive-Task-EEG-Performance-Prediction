@@ -12,12 +12,37 @@ import numpy
 import cPickle
 import glob
 from scipy.fftpack import fft
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+def computeLDA(data):
+    lda = LinearDiscriminantAnalysis()
+    all_labels = numpy.array(['fail']*data[0].shape[0]+['success']*data[1].shape[0])
+    all_data = numpy.append(data[0],data[1],axis=0)
+    lda.fit(all_data,all_labels)
+    all_data_new = lda.transform(all_data)
+    data[0] = all_data_new[0:data[0].shape[0],:]
+    data[1] = all_data_new[data[0].shape[0]:,:]
+
+    return lda, data
+
+def computePCA(data):
+    pca = PCA(n_components=50)
+    all_data = numpy.append(data[0],data[1],axis=0)
+    pca.fit(all_data)
+    all_data_new = pca.transform(all_data)
+    data[0] = all_data_new[0:data[0].shape[0],:]
+    data[1] = all_data_new[data[0].shape[0]:,:]
+
+    return pca, data
+
 
 def parseArguments():
     parser = argparse.ArgumentParser(prog='PROG')
     parser.add_argument('-f' , '--foldPath', nargs=1, required=True, help="path to the root of the folds")  
     parser.add_argument('-m' , '--modeltype', nargs=1, required=True, help="model type")    
     parser.add_argument("-p", "--classifierParam", type=float, default=1, help="classifier parameter")
+    parser.add_argument("-s", "--signaltype", nargs=1, default='raw', help="input signal")
     args = parser.parse_args()
     return args
 
@@ -63,26 +88,68 @@ def stSpectralRollOff(X, c):
 
 def fileFeatureExtraction(fileName, signal_type):                                                                                                                         # feature extraction from file
     b = numpy.load(fileName)
-    rawData = b[signal_type].astype("float64") 
-    means = rawData.mean(axis = 0)                                                                                                                           # compute average
-    stds = rawData.std(axis = 0)                                                                                                                             # compute std
-    maxs = rawData.max(axis = 0)                                                                                                                             # compute max values
-    mins = rawData.min(axis = 0)                                                                                                                             # compute min values
-    centroid = []
-    rolloff = []
-    for f in range(rawData.shape[1]):                                                                                                                        # compute spectral features
-        fTemp = abs(fft(rawData[:,f]));                                                                                                                      # compute FFT
-        fTemp = fTemp[0:int(fTemp.shape[0]/2)]                                                                                                               # get the first symetrical FFT part
-        c = 0.9999
-        centroid.append(spectralCentroid(fTemp))                                                                                                             # compute spectral centroid
-        rolloff.append(stSpectralRollOff(fTemp, c))                                                                                                          # compute spectral rolloff
-    featureVector = numpy.concatenate((means, stds, maxs, mins, centroid, rolloff))                                                                          # concatenate features to form the final feature vector
+
+    #Reject data if sum of current h values is higher than 7units (at least one chanel at 1 and no chanel more than 2)
+    is_good = numpy.sum(b['h'].astype("float64"),axis=1)
+    good_indices = [j for j in range(0,is_good.shape[0]) if list(is_good)[j] <= 7]
+
+    if signal_type == 'all': #use features from all Muse signals
+        featureVector = []
+        for s in  b.files:
+            if s in ['raw','h_eeg','c']:
+                continue
+
+            rawData = b[s].astype("float64") 
+
+            if len(good_indices) != rawData.shape[0]: # reject unmoderated
+                if rawData.shape[0] > is_good.shape[0]:
+                    rawData = numpy.delete(rawData,0,0)
+                if rawData.shape[0] < is_good.shape[0]:
+                    is_good_new = numpy.delete(is_good,0,0)
+                    good_indices = [j for j in range(0,is_good_new.shape[0]) if list(is_good_new)[j] <= 7]
+
+                rawData = rawData[good_indices,:]
+
+
+            means = rawData.mean(axis = 0)                                                                                                                           # compute average
+            stds = rawData.std(axis = 0)                                                                                                                             # compute std
+            maxs = rawData.max(axis = 0)                                                                                                                             # compute max values
+            mins = rawData.min(axis = 0)                                                                                                                             # compute min values
+            centroid = []
+            rolloff = []
+            for f in range(rawData.shape[1]):                                                                                                                        # compute spectral features
+                fTemp = abs(fft(rawData[:,f]));                                                                                                                      # compute FFT
+                fTemp = fTemp[0:int(fTemp.shape[0]/2)]                                                                                                               # get the first symetrical FFT part
+                c = 0.9999
+                centroid.append(spectralCentroid(fTemp))                                                                                                             # compute spectral centroid
+                rolloff.append(stSpectralRollOff(fTemp, c))        
+            featureVector_signalpart = numpy.concatenate((means, stds, maxs, mins, centroid, rolloff)) 
+            featureVector = featureVector + list(featureVector_signalpart)  
+   
+        featureVector = numpy.array(featureVector)
+        #print featureVector
+    else:  #Use features only from a single data type from Muse
+        rawData = b[signal_type].astype("float64")
+        means = rawData.mean(axis = 0)                                                                                                                           # compute average
+        stds = rawData.std(axis = 0)                                                                                                                             # compute std
+        maxs = rawData.max(axis = 0)                                                                                                                             # compute max values
+        mins = rawData.min(axis = 0)                                                                                                                             # compute min values
+        centroid = []
+        rolloff = []
+        for f in range(rawData.shape[1]):                                                                                                                        # compute spectral features
+            fTemp = abs(fft(rawData[:,f]));                                                                                                                      # compute FFT
+            fTemp = fTemp[0:int(fTemp.shape[0]/2)]                                                                                                               # get the first symetrical FFT part
+            c = 0.9999
+            centroid.append(spectralCentroid(fTemp))                                                                                                             # compute spectral centroid
+            rolloff.append(stSpectralRollOff(fTemp, c))                                                                                                          # compute spectral rolloff
+        featureVector = numpy.concatenate((means, stds, maxs, mins, centroid, rolloff))                                                                          # concatenate features to form the final feature vector
     return featureVector
 
 def dirFeatureExtraction(dirNames,signal_type):                                                                                                                          # extract features from a list of directories
     features = []
     classNames = []
     c1 = 0
+    allFeatures = numpy.zeros((0,366))
     for d in dirNames:                                                                                                                                       # for each direcotry
         types = ('*.npz',)
         filesList = []
@@ -94,15 +161,18 @@ def dirFeatureExtraction(dirNames,signal_type):                                 
             if numpy.isnan(fv).any():
                 #print file.split('_')
                 #c1+=1
+                #print c1
                 continue                                                                                                              # extract features and append to feature matrix:
             if i==0:
                 allFeatures = fv
             else:
-                allFeatures = numpy.vstack((allFeatures, fv))
+                if allFeatures.shape[0] >1 :
+                    allFeatures = numpy.vstack((allFeatures, fv))
+                else:              
+                   allFeatures = fv
+
         features.append(allFeatures)
         classNames.append(d.split(os.sep)[-1])
-    #print c1
-    #sys.exit()
     return classNames, features
 
 def main(rootName,modelType,classifierParam,signal_type):        
@@ -116,8 +186,26 @@ def main(rootName,modelType,classifierParam,signal_type):
     for ifold in range(0, 10):                                                                                                                              # for each fold
         dirName = rootName + os.sep + "fold_{0:d}".format(ifold)                                                                                            # get fold path name
         classNamesTrain, featuresTrain = dirFeatureExtraction([os.path.join(dirName, "train", "fail"), os.path.join(dirName, "train", "success")],signal_type)          # TRAINING data feature extraction  
-        bestParam = aT.evaluateClassifier(featuresTrain, classNamesTrain, 2, modelType, C, 0, 0.90)                                                         # internal cross-validation (for param selection)
+
+        # ---- DIMENTIONALITY REDUCTION ON TRAIN-------#
+        #PCA on Train
+        #pca_mat,featuresTrain = computePCA(featuresTrain)
+        #LDA on Train
+        #lda_mat,featuresTrain = computeLDA(featuresTrain)
+
+        bestParam = aT.evaluateClassifier(featuresTrain, classNamesTrain, 2, modelType, C, 1, 0.90)                                                         # internal cross-validation (for param selection)
         classNamesTest, featuresTest = dirFeatureExtraction([os.path.join(dirName, "test", "fail"), os.path.join(dirName, "test", "success")],signal_type)              # trainGradientBoosting data feature extraction  
+        
+        # ---- DIMENTIONALITY REDUCTION ON TEST-------#
+        #PCA on Test
+        #featuresTest[0] = pca_mat.transform(featuresTest[0])
+        #featuresTest[1] = pca_mat.transform(featuresTest[1])
+        #LDA on Test
+        #featuresTest[0] = lda_mat.transform(featuresTest[0])
+        #featuresTest[1] = lda_mat.transform(featuresTest[1])
+
+        
+        
         [featuresTrainNew, MEAN, STD] = aT.normalizeFeatures(featuresTrain)                                                                                 # training features NORMALIZATION                        
         if modelType == "svm":                                                                                                                              # classifier training
             Classifier = aT.trainSVM(featuresTrainNew, bestParam)        
@@ -173,5 +261,6 @@ if __name__ == '__main__':
     args = parseArguments()
     rootName = args.foldPath[0]
     modelType = args.modeltype[0]
+    signalType =args.signaltype[0]
     classifierParam = args.classifierParam
-    Acc,Recall,Precision,F1 = main(rootName,modelType,classifierParam)
+    CMall,Acc,Recall,Precision,F1 = main(rootName,modelType,classifierParam,signalType)

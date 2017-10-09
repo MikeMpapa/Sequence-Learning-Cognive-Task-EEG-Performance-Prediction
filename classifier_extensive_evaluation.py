@@ -12,9 +12,15 @@ if __name__ == '__main__':
    #root = '../tmp/'
 
 
-    signals = ['raw','a','b','g','d','t','Aa','Ab','Ag','Ad','At','ascore','bscore','gscore','dscore','tscore'] 
-
     model_list = [sys.argv[1]] #['svm', 'svm_rbf','randomforest','gradientboosting','extratrees']
+    experiment_type = sys.argv[2]
+
+    if len(sys.argv) > 3:
+        signals = sys.argv[3:]
+    else:
+        signals = ['raw','a','b','g','d','t','Aa','Ab','Ag','Ad','At','ascore','bscore','gscore','dscore','tscore','c'] 
+
+
     root = '../EEG_ALL_DATA/'
 
     to_csv = []
@@ -120,10 +126,10 @@ if __name__ == '__main__':
 
 
     if not os.path.exists('Results/'):
-        f = open('Results/no_temporal.csv', "w")
+        f = open('Results/'+experiment_type+'.csv', "w")
         f.close
 
-    with open('Results/no_temporal.csv', "a") as f:
+    with open('Results/'+experiment_type+'.csv', "a") as f:
         writer = csv.writer(f)
         writer.writerow(['MODEL','BEST_P','SIGNAL','ACC','PRE_C1', 'PRE_C2','REC_C1','REC_C2','F1_C1','F1_C2'])
         for clc in to_csv:
